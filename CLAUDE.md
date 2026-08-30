@@ -110,23 +110,27 @@ export type TaskMode = 'fuzzy' | 'firm'
 export type TaskStatus = 'todo' | 'doing' | 'done' | 'shelved'
 export type TaskSize = 'S' | 'M' | 'L' | 'XL'
 
-export interface ChecklistItem { id: string; text: string; done: boolean }
+export interface ChecklistItem {
+  id: string
+  text: string
+  done: boolean
+}
 
 export interface Task {
   id: string
   title: string
   mode: TaskMode
   status: TaskStatus
-  important: boolean      // 四象限 = important × urgent
+  important: boolean // 四象限 = important × urgent
   urgent: boolean
-  size?: TaskSize         // 模糊档的规模感
-  deadline?: ISODate      // firm 档必填（由表单与 hooks 校验）
-  estimateDays?: number   // 预计耗时（天，支持 0.5），firm 档使用
+  size?: TaskSize // 模糊档的规模感
+  deadline?: ISODate // firm 档必填（由表单与 hooks 校验）
+  estimateDays?: number // 预计耗时（天，支持 0.5），firm 档使用
   tags: string[]
   checklist: ChecklistItem[]
-  sortOrder: number       // 同象限内手动顺序
+  sortOrder: number // 同象限内手动顺序
   note?: string
-  doneAt?: string         // ISO datetime；status='done' 时写入
+  doneAt?: string // ISO datetime；status='done' 时写入
   createdAt: string
   updatedAt: string
 }
@@ -145,11 +149,11 @@ export interface AppData {
 ```ts
 export interface StorageAdapter {
   load(): Promise<AppData>
-  saveMeal(meal: MealSlot): Promise<void>   // upsert
+  saveMeal(meal: MealSlot): Promise<void> // upsert
   deleteMeal(id: string): Promise<void>
-  saveTask(task: Task): Promise<void>       // upsert
+  saveTask(task: Task): Promise<void> // upsert
   deleteTask(id: string): Promise<void>
-  replaceAll(data: AppData): Promise<void>  // 导入用
+  replaceAll(data: AppData): Promise<void> // 导入用
 }
 ```
 
@@ -232,8 +236,7 @@ export interface StorageAdapter {
 
 ```ts
 // src/voice/parseMeal.ts（P2 实现）
-export type MealDraft =
-  Pick<MealSlot, 'date' | 'slot' | 'person'> &
+export type MealDraft = Pick<MealSlot, 'date' | 'slot' | 'person'> &
   Partial<Pick<MealSlot, 'place' | 'note'>>
 export async function parseMealUtterance(text: string, refDate: ISODate): Promise<MealDraft[]>
 ```
@@ -253,19 +256,19 @@ export async function parseMealUtterance(text: string, refDate: ISODate): Promis
 
 ## 12. MVP 验收清单（全过 = MVP 完成）
 
-- [ ] 全新 clone 后 `pnpm i && pnpm dev` 直接可用：零环境变量、零外部账号
-- [ ] `pnpm check` 全绿；GitHub CI 绿
-- [ ] 空状态 → 载入示例数据 → 三个主页面立即有内容
-- [ ] 饭局：新建 / 编辑 / 删除；翻到上周与下下周再回今天；刷新数据仍在
-- [ ] 模糊任务：四象限归组正确；组内拖拽后刷新顺序保持
-- [ ] 明确任务：排序、倒计时（含「逾期 n 天」）、最晚开始日正确（用例：deadline=今天+5、estimate=2 → 最晚开始=今天+4）
-- [ ] 升档补 deadline 生效；降档回来 deadline / estimate 值不丢
-- [ ] 完成任务当天划线置底；把 doneAt 改为昨天后出现在归档并可恢复
-- [ ] 搁置折叠区、标签筛选、checklist 勾选均可用
-- [ ] 导出 JSON + 两份 CSV 可下载；导入 JSON 完整还原
-- [ ] 中英切换全站生效，`i18n:check` 通过
-- [ ] 375px 与 1280px 手动走查无破版
-- [ ] `dates.ts` / `quadrant.ts` / `storage/local.ts` 单测覆盖边界（逾期、0.5 天、跨年的周）
+- [x] 全新 clone 后 `pnpm i && pnpm dev` 直接可用：零环境变量、零外部账号
+- [x] `pnpm check` 全绿；GitHub CI 绿
+- [x] 空状态 → 载入示例数据 → 三个主页面立即有内容
+- [x] 饭局：新建 / 编辑 / 删除；翻到上周与下下周再回今天；刷新数据仍在
+- [x] 模糊任务：四象限归组正确；组内拖拽后刷新顺序保持
+- [x] 明确任务：排序、倒计时（含「逾期 n 天」）、最晚开始日正确（用例：deadline=今天+5、estimate=2 → 最晚开始=今天+4）
+- [x] 升档补 deadline 生效；降档回来 deadline / estimate 值不丢
+- [x] 完成任务当天划线置底；把 doneAt 改为昨天后出现在归档并可恢复
+- [x] 搁置折叠区、标签筛选、checklist 勾选均可用
+- [x] 导出 JSON + 两份 CSV 可下载；导入 JSON 完整还原
+- [x] 中英切换全站生效，`i18n:check` 通过
+- [x] 375px 与 1280px 手动走查无破版
+- [x] `dates.ts` / `quadrant.ts` / `storage/local.ts` 单测覆盖边界（逾期、0.5 天、跨年的周）
 
 ## 13. 路线图
 
