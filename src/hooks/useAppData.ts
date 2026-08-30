@@ -29,10 +29,58 @@ async function applyAll(data: AppData): Promise<void> {
   useTasks.setState({ tasks: data.tasks, loaded: true })
 }
 
+const MEAL_SLOTS = ['lunch', 'dinner']
+const TASK_MODES = ['fuzzy', 'firm']
+const TASK_STATUSES = ['todo', 'doing', 'done', 'shelved']
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null
+}
+
+function isValidMeal(v: unknown): boolean {
+  if (!isRecord(v)) return false
+  return (
+    typeof v.id === 'string' &&
+    typeof v.date === 'string' &&
+    typeof v.slot === 'string' &&
+    MEAL_SLOTS.includes(v.slot) &&
+    typeof v.person === 'string'
+  )
+}
+
+function isValidTask(v: unknown): boolean {
+  if (!isRecord(v)) return false
+  return (
+    typeof v.id === 'string' &&
+    typeof v.title === 'string' &&
+    typeof v.mode === 'string' &&
+    TASK_MODES.includes(v.mode) &&
+    typeof v.status === 'string' &&
+    TASK_STATUSES.includes(v.status) &&
+    typeof v.important === 'boolean' &&
+    typeof v.urgent === 'boolean' &&
+    typeof v.sortOrder === 'number' &&
+    Array.isArray(v.tags) &&
+    Array.isArray(v.checklist)
+  )
+}
+
+// §6 禁止 adapter 做校验，hooks 是唯一能拦下坏数据的层。
+// 元素级校验：一条坏记录（如 null）经 replaceAll 覆盖后会白屏且丢失原数据，必须整体拒绝。
+export function isValidImport(data: unknown): data is Pick<AppData, 'meals' | 'tasks'> {
+  if (!isRecord(data)) return false
+  if (typeof data.schemaVersion === 'number' && data.schemaVersion > SCHEMA_VERSION) return false
+  return (
+    Array.isArray(data.meals) &&
+    Array.isArray(data.tasks) &&
+    data.meals.every(isValidMeal) &&
+    data.tasks.every(isValidTask)
+  )
+}
+
 async function importData(data: AppData): Promise<void> {
-  // §6 禁止 adapter 做校验，hooks 是唯一能拦下坏数据的层
-  if (!Array.isArray(data.meals) || !Array.isArray(data.tasks)) {
-    throw new Error('invalid import data: meals/tasks must be arrays')
+  if (!isValidImport(data)) {
+    throw new Error('invalid import data')
   }
   await applyAll({ schemaVersion: SCHEMA_VERSION, meals: data.meals, tasks: data.tasks })
 }

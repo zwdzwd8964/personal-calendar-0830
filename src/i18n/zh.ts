@@ -109,6 +109,10 @@ export const zh = {
   'archive.restore': '恢复为待办',
   'archive.empty': '暂无归档任务',
 
+  // 错误兜底
+  'error.title': '出错了，页面无法渲染',
+  'error.reload': '重新加载',
+
   // 设置页
   'settings.title': '设置',
   'settings.language': '语言',

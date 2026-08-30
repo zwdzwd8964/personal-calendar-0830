@@ -1,4 +1,4 @@
-import { addDaysISO, daysUntil, latestStartDate, todayISO, weekOf } from '@/lib/dates'
+import { addDaysISO, daysUntil, latestStartDate, localDateOf, todayISO, weekOf } from '@/lib/dates'
 
 describe('todayISO', () => {
   it('formats a Date as YYYY-MM-DD in local time', () => {
@@ -87,6 +87,16 @@ describe('daysUntil', () => {
   it('counts calendar days across month and year boundaries', () => {
     expect(daysUntil('2026-09-02', '2026-08-30')).toBe(3)
     expect(daysUntil('2026-01-02', '2025-12-30')).toBe(3)
+  })
+})
+
+describe('localDateOf', () => {
+  it('maps a UTC datetime back to the local calendar date it was created on', () => {
+    // build the instant from local components so the assertion holds in any TZ
+    const lateEvening = new Date(2026, 7, 30, 23, 30, 0)
+    expect(localDateOf(lateEvening.toISOString())).toBe('2026-08-30')
+    const earlyMorning = new Date(2026, 7, 31, 0, 5, 0)
+    expect(localDateOf(earlyMorning.toISOString())).toBe('2026-08-31')
   })
 })
 

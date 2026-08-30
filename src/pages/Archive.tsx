@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import type { Task } from '@/types'
 import { useTasks } from '@/hooks/useTasks'
 import { formatFullDate, monthLabel, useLocale, useT } from '@/i18n'
-import { todayISO } from '@/lib/dates'
+import { localDateOf, todayISO } from '@/lib/dates'
 
 // After filtering, doneAt is guaranteed present; the intersection type lets TS know.
 type ArchivedTask = Task & { doneAt: string }
@@ -26,11 +26,11 @@ export default function Archive() {
       (task): task is ArchivedTask =>
         task.status === 'done' &&
         typeof task.doneAt === 'string' &&
-        task.doneAt.slice(0, 10) !== today,
+        localDateOf(task.doneAt) !== today,
     )
     const byMonth = new Map<string, ArchivedTask[]>()
     for (const task of archived) {
-      const month = task.doneAt.slice(0, 7)
+      const month = localDateOf(task.doneAt).slice(0, 7)
       const list = byMonth.get(month)
       if (list) list.push(task)
       else byMonth.set(month, [task])
@@ -62,7 +62,7 @@ export default function Archive() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm text-gray-800">{task.title}</p>
                       <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-400">
-                        <span>{formatFullDate(task.doneAt, locale)}</span>
+                        <span>{formatFullDate(localDateOf(task.doneAt), locale)}</span>
                         {task.tags.map((tag) => (
                           <span
                             key={tag}

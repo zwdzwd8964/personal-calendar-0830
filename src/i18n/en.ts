@@ -111,6 +111,10 @@ export const en = {
   'archive.restore': 'Restore to to-do',
   'archive.empty': 'Nothing archived yet',
 
+  // Error fallback
+  'error.title': 'Something went wrong',
+  'error.reload': 'Reload',
+
   // Settings page
   'settings.title': 'Settings',
   'settings.language': 'Language',

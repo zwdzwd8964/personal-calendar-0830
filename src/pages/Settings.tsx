@@ -4,7 +4,7 @@ import { SCHEMA_VERSION } from '@/types'
 import type { AppData } from '@/types'
 import { useLocale, useT } from '@/i18n'
 import type { Locale, MessageKey } from '@/i18n'
-import { useAppData } from '@/hooks/useAppData'
+import { isValidImport, useAppData } from '@/hooks/useAppData'
 import { mealsToCsv, tasksToCsv } from '@/lib/csv'
 import Modal from '@/components/common/Modal'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
@@ -29,14 +29,9 @@ function downloadFile(filename: string, content: string, mime: string): void {
   URL.revokeObjectURL(url)
 }
 
-// Per §8.5, only validate that meals / tasks are arrays; element-level shape is trusted (solo app).
-// A schemaVersion from a NEWER schema is rejected (mirrors storage/local.ts load strictness).
-function isImportable(value: unknown): value is Pick<AppData, 'meals' | 'tasks'> {
-  if (typeof value !== 'object' || value === null) return false
-  const v = value as Record<string, unknown>
-  if (typeof v.schemaVersion === 'number' && v.schemaVersion > SCHEMA_VERSION) return false
-  return Array.isArray(v.meals) && Array.isArray(v.tasks)
-}
+// Element-level validation lives in hooks (isValidImport): one bad record would
+// otherwise overwrite real data via replaceAll and white-screen every page.
+const isImportable = isValidImport
 
 function Section({
   title,

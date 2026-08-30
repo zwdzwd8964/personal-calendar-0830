@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import type { ChecklistItem, Task, TaskMode, TaskSize, TaskStatus } from '@/types'
 import { useT } from '@/i18n'
@@ -23,11 +23,13 @@ const inputCls =
 const actionBtnCls =
   'rounded-lg border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50'
 
-// '#xx' -> 'xx'; anything without the leading hash (or empty after it) is not a tag yet
+// '#xx' -> 'xx'; anything without the leading hash (or empty after it) is not a tag yet.
+// Only the first whitespace-delimited token counts, so pasting '#a b ' commits 'a'
+// exactly like typing it would.
 function parseTag(raw: string): string | null {
   const trimmed = raw.trim()
   if (!trimmed.startsWith('#')) return null
-  const tag = trimmed.slice(1).trim()
+  const tag = trimmed.slice(1).trim().split(/\s+/)[0] ?? ''
   return tag === '' ? null : tag
 }
 
@@ -35,11 +37,17 @@ interface TaskFormDrawerProps {
   task: Task | null // null = create
   defaultMode: TaskMode
   onClose: () => void
+  onCreated?: (task: Task) => void
 }
 
 // §8.3 create/edit drawer: fields shown per mode; hidden fields keep their values so
 // promote/demote never loses deadline / estimate / size (§5)
-export default function TaskFormDrawer({ task, defaultMode, onClose }: TaskFormDrawerProps) {
+export default function TaskFormDrawer({
+  task,
+  defaultMode,
+  onClose,
+  onCreated,
+}: TaskFormDrawerProps) {
   const t = useT()
   const create = useTasks((s) => s.create)
   const update = useTasks((s) => s.update)
@@ -64,6 +72,12 @@ export default function TaskFormDrawer({ task, defaultMode, onClose }: TaskFormD
   const [note, setNote] = useState(task?.note ?? '')
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const errorRef = useRef<HTMLParagraphElement>(null)
+
+  // the error line sits low in a scrollable drawer — bring it into view when it appears
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [error])
 
   const commitTag = (tag: string) => {
     setTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]))
@@ -134,7 +148,7 @@ export default function TaskFormDrawer({ task, defaultMode, onClose }: TaskFormD
 
     // fold uncommitted tag / checklist input into the save so nothing typed is lost
     let finalTags = tags
-    const rawPending = tagInput.trim().replace(/^#/, '').trim()
+    const rawPending = tagInput.trim().replace(/^#/, '').trim().split(/\s+/)[0] ?? ''
     if (rawPending !== '' && !finalTags.includes(rawPending)) {
       finalTags = [...finalTags, rawPending]
     }
@@ -161,7 +175,8 @@ export default function TaskFormDrawer({ task, defaultMode, onClose }: TaskFormD
       if (task) {
         await update(task.id, payload)
       } else {
-        await create(payload)
+        const created = await create(payload)
+        onCreated?.(created)
       }
       onClose()
     } catch {
@@ -355,7 +370,7 @@ export default function TaskFormDrawer({ task, defaultMode, onClose }: TaskFormD
                 >
                   #{tag}
                   <button
-                    aria-label={t('common.delete')}
+                    aria-label={`${t('common.delete')} #${tag}`}
                     onClick={() => removeTag(tag)}
                     className="text-gray-400 hover:text-red-500"
                   >
@@ -432,7 +447,11 @@ export default function TaskFormDrawer({ task, defaultMode, onClose }: TaskFormD
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p ref={errorRef} className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
         <div className="flex items-center justify-between gap-2 pt-1">
           {task ? (

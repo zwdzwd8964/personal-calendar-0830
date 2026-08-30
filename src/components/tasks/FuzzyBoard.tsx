@@ -115,6 +115,8 @@ function SortableTask({
   onOpen: (task: Task) => void
   disabled: boolean
 }) {
+  // when drag is disabled the card must stay an ordinary enabled click target,
+  // so attributes/listeners (incl. aria-disabled) are not spread at all below
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     disabled,
@@ -128,8 +130,8 @@ function SortableTask({
         touchAction: 'manipulation',
       }}
       className={isDragging ? 'relative z-10 opacity-75' : ''}
-      {...attributes}
-      {...listeners}
+      {...(disabled ? {} : attributes)}
+      {...(disabled ? {} : listeners)}
     >
       <TaskCard task={task} onClick={() => onOpen(task)} />
     </div>

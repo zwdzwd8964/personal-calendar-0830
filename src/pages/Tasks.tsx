@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Task, TaskMode } from '@/types'
 import { useT } from '@/i18n'
-import { todayISO } from '@/lib/dates'
+import { localDateOf, todayISO } from '@/lib/dates'
 import { useTasks } from '@/hooks/useTasks'
 import TagFilter from '@/components/tasks/TagFilter'
 import FuzzyBoard from '@/components/tasks/FuzzyBoard'
@@ -103,6 +103,15 @@ export default function Tasks() {
           task={editingTask}
           defaultMode={view}
           onClose={() => setDrawerOpen(false)}
+          onCreated={(created) => {
+            // a new task hidden by the active tag filter looks like a failed save — clear the filter
+            if (
+              activeSelected.length > 0 &&
+              !created.tags.some((tag) => activeSelected.includes(tag))
+            ) {
+              setSelectedTags([])
+            }
+          }}
         />
       )}
     </div>
@@ -125,7 +134,7 @@ function TaskColumn({ mode, hiddenOnMobile, tasks, today, onOpen, filterActive }
   const active = inMode.filter((task) => task.status === 'todo' || task.status === 'doing')
   const doneToday = inMode.filter(
     (task) =>
-      task.status === 'done' && task.doneAt !== undefined && task.doneAt.slice(0, 10) === today,
+      task.status === 'done' && task.doneAt !== undefined && localDateOf(task.doneAt) === today,
   )
   const shelved = inMode.filter((task) => task.status === 'shelved')
   const empty = active.length === 0 && doneToday.length === 0 && shelved.length === 0

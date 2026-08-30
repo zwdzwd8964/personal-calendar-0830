@@ -33,3 +33,12 @@ export function latestStartDate(deadline: ISODate, estimateDays?: number): ISODa
   if (estimateDays === undefined) return null
   return addDaysISO(deadline, -Math.ceil(estimateDays) + 1)
 }
+
+/**
+ * Local calendar date of an ISO datetime (e.g. doneAt, stored in UTC).
+ * A task completed at 23:30 local on the 30th must classify as the 30th,
+ * not the UTC date of that instant.
+ */
+export function localDateOf(isoDateTime: string): ISODate {
+  return todayISO(new Date(isoDateTime))
+}
