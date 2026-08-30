@@ -94,6 +94,8 @@ export const zh = {
   'tasks.action.reopen': '重新打开',
   'tasks.action.shelve': '搁置',
   'tasks.action.restore': '恢复为待办',
+  'tasks.action.back': '退回待办',
+  'tasks.estimateInvalid': '预计耗时必须大于 0',
 
   // 倒计时与最晚开始日
   'countdown.overdue': '逾期 {n} 天',

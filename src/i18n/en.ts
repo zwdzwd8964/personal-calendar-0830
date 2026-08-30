@@ -96,6 +96,8 @@ export const en = {
   'tasks.action.reopen': 'Reopen',
   'tasks.action.shelve': 'Shelve',
   'tasks.action.restore': 'Restore to to-do',
+  'tasks.action.back': 'Back to to-do',
+  'tasks.estimateInvalid': 'Estimate must be greater than 0',
 
   // Countdown & latest start
   'countdown.overdue': 'Overdue {n}d',
