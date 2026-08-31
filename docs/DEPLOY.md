@@ -57,7 +57,21 @@
 - **连云端调试**：复制 `.env.example` 为 `.env.local`，填入两个值，重启 `pnpm dev`
   —— 出现登录页，登录后读写的就是云端数据。`.env.local` 已被 gitignore，不会提交。
 
-## 五、常见问题
+## 五、语音落槽的 Edge Function（P2）
+
+1. Supabase 控制台 → 左侧栏 **Edge Functions** → **Deploy a new function** →
+   选 **Via Editor**（浏览器内编辑器）。
+2. 函数名填 `parse-meal`（必须一字不差），把仓库里
+   `supabase/functions/parse-meal/index.ts` 的**整个文件内容**粘贴进去 → **Deploy**。
+3. 配 key：Edge Functions 页面 → **Secrets**（或 Project Settings → Edge Functions）→
+   **Add secret**：Name `OPENAI_API_KEY`，Value 填你的 OpenAI API key（`sk-` 开头）。
+   可选再加一条 `OPENAI_MODEL` 换模型（默认 `gpt-4o-mini`）。
+4. 验证：打开线上 App → 饭局页 → 「🎤 语音录入」→ 输入
+   「明天中午跟老张在食堂吃饭」→ 解析 → 应出现一张草稿卡 → 存入。
+5. OpenAI key 只存在 Supabase 服务端，浏览器和代码仓库永远接触不到；
+   函数默认开启 JWT 校验，未登录者无法调用。
+
+## 六、常见问题
 
 - **登录报「邮箱或密码不正确」**：确认用的是 Authentication → Users 里创建的那个账号，
   且创建时勾了 Auto Confirm；没勾的话在 Users 列表里把该用户 Confirm 掉。
