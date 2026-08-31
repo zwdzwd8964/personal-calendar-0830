@@ -118,6 +118,9 @@ export const zh = {
   'settings.account': '账号',
   'settings.signOut': '退出登录',
 
+  // 离线（P2 云端模式）
+  'offline.banner': '当前离线：显示最近一次同步的快照，此时的修改不会被保存',
+
   // 错误兜底
   'error.title': '出错了，页面无法渲染',
   'error.reload': '重新加载',

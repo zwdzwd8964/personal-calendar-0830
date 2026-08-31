@@ -120,6 +120,9 @@ export const en = {
   'settings.account': 'Account',
   'settings.signOut': 'Sign out',
 
+  // Offline (P2 cloud mode)
+  'offline.banner': 'Offline: showing the last synced snapshot — changes will not be saved',
+
   // Error fallback
   'error.title': 'Something went wrong',
   'error.reload': 'Reload',
