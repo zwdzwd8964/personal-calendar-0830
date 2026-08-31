@@ -18,11 +18,15 @@
 5. **创建你的唯一账号**：**Authentication** → **Users** → **Add user** → **Create new user**：
    - 填你的邮箱 + 设一个登录密码（这是你以后登录 App 用的，跟第 2 步的数据库密码无关）
    - 勾选 **Auto Confirm User**（否则要走邮箱验证）→ 创建。
-6. **拿两个配置值**：左侧栏 **Project Settings**（齿轮图标）→ **API**：
-   - **Project URL**（形如 `https://xxxx.supabase.co`）
-   - **anon public** key（很长的一串，注意是 _anon_，**不要**拿 service_role）
-     这两个值就是 App 需要的全部配置。anon key 本来就是设计成放进浏览器的公开值，
-     数据安全由第 3 步建立的行级安全（RLS）保证——泄露它不等于泄露数据。
+6. **拿两个配置值**（2025 年后的新版控制台）：
+   - **Project URL**：左侧栏 **Project Settings**（齿轮）→ INTEGRATIONS 下的 **Data API**
+     页面，第一项就是 Project URL（形如 `https://<项目ref>.supabase.co`，
+     `<项目ref>` 与浏览器地址栏 `/project/` 后面那串一致）。
+   - **Key**：**Project Settings** → **API Keys** → **Publishable key**（`sb_publishable_` 开头，
+     点旁边复制按钮拿完整值）。它是旧版 "anon public" key 的新名字，官方标注
+     "can be safely shared publicly"——配了 RLS 就安全。旧项目也可在
+     "Legacy anon, service_role API keys" 标签页拿 anon key，二者等效。
+   - **绝对不要**使用/外传下方 **Secret keys**（旧称 service_role）——那是能绕过 RLS 的服务端密钥。
 
 ## 二、部署到 Vercel
 
