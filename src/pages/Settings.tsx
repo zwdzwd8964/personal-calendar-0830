@@ -5,6 +5,7 @@ import type { AppData } from '@/types'
 import { useLocale, useT } from '@/i18n'
 import type { Locale, MessageKey } from '@/i18n'
 import { isValidImport, useAppData } from '@/hooks/useAppData'
+import { useAuth } from '@/hooks/useAuth'
 import { mealsToCsv, tasksToCsv } from '@/lib/csv'
 import Modal from '@/components/common/Modal'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
@@ -60,6 +61,8 @@ export default function Settings() {
   const t = useT()
   const { locale, setLocale } = useLocale()
   const { ready, isEmpty, exportData, importData, clearAll, loadSeedData } = useAppData()
+  const authStatus = useAuth((s) => s.status)
+  const signOut = useAuth((s) => s.signOut)
 
   const [importPreview, setImportPreview] = useState<AppData | null>(null)
   const [importError, setImportError] = useState(false)
@@ -145,6 +148,14 @@ export default function Settings() {
             ))}
           </div>
         </Section>
+
+        {authStatus === 'signedIn' && (
+          <Section title={t('settings.account')}>
+            <button onClick={() => void signOut()} className={SECONDARY_BUTTON}>
+              {t('settings.signOut')}
+            </button>
+          </Section>
+        )}
 
         <Section title={t('settings.export')}>
           <div className="flex flex-wrap gap-2">

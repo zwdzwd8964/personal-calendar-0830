@@ -27,3 +27,13 @@
 - 2026-08-30 · 标签解析只取首个空白分隔 token（粘贴 `#a b ` 与逐字输入行为一致）；筛选激活时新建的不匹配任务会自动清空筛选 · 防止产生打不出来的含空格标签、防止"保存看似失败"。
 - 2026-08-30 · index.html 加内联 SVG emoji favicon · 消除每次加载的 /favicon.ico 404 噪音。
 - 2026-08-30 · 工具链附属补记：@vitejs/plugin-react（Vite 官方 React 集成，属锁定栈组成） · 审计发现决策日志漏记。
+- 2026-08-31 · P1 开工：以 P0 历史建立 main 分支（此前仓库无 main，CI 从未触发）；P1 在开发分支推进、完成后 PR 进 main · 经需求方授权。
+- 2026-08-31 · 新依赖 @supabase/supabase-js（§3 已同步） · §13 P1 既定路线，唯一云端依赖。
+- 2026-08-31 · adapter 按 env 切换：两个 VITE_SUPABASE_* 同时存在才走云端，否则回退 localStorage · 保住「全新 clone 零配置可用」与 CI 零 secret。
+- 2026-08-31 · 登录采用邮箱+密码、Supabase 关闭公开注册 · 魔法链接引入邮件送达与回调域名配置成本，单人应用不值。
+- 2026-08-31 · supabase 客户端单例置于 storage/supabaseClient.ts，UI 经 hooks/useAuth.ts 触达 · 维持「UI 不 import storage」铁律；新增 components/auth/ 目录（§4 已同步）。
+- 2026-08-31 · SupabaseAdapter 不做写防抖（网络写入按操作直发）；load 失败向上抛、UI 停留加载态由刷新重试 · §6 防抖是 localStorage 特有优化；静默返回空数据会让 seed/导入误覆盖云端真实数据。
+- 2026-08-31 · timestamptz 读回一律 normalize 成 `toISOString()` 的 'Z' 形态 · groupFuzzy 以 createdAt 字符串比较做平序，格式必须稳定。
+- 2026-08-31 · 云端 (user_id,date,slot) 加唯一索引 · useMeals 挤占冲突时先删后存，写入顺序与索引兼容，数据库层兜底一槽一条。
+- 2026-08-31 · 退出登录入口放设置页「账号」区，作为独立提交的 P1 新增功能 · 不污染零改动试金石的度量。
+- 2026-08-31 · 单元测试在 vite.config.ts 强制清空 `VITE_SUPABASE_*`（永远本地模式）；云端集成测试独立经 process.env（`SB_TEST_*`）传参并自建客户端，无凭据整组跳过 · 开发者本机的 .env.local 不得影响 pnpm check 的确定性；CI 保持零 secret。

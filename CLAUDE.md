@@ -53,6 +53,7 @@
 - 日期：date-fns（仅做周计算与差值；存储一律 `'YYYY-MM-DD'` 字符串）
 - 测试：vitest + @testing-library/react + jsdom
 - 质量：eslint + @typescript-eslint + prettier；husky + lint-staged
+- 云端（P1 起）：@supabase/supabase-js——Postgres 数据 + 邮箱登录，唯一云端依赖
 - i18n 自实现（§9），不引 i18n 框架。除上述外不加任何库。
 
 ## 4. 目录结构
@@ -70,20 +71,24 @@ src/
     zh.ts  en.ts
   storage/
     adapter.ts         # StorageAdapter 接口
-    local.ts           # localStorage 实现（MVP 默认）
-    supabase.ts        # P1；现在只留同接口空实现 + TODO
-    index.ts           # 选择并导出当前 adapter 实例
+    local.ts           # localStorage 实现（无 env 时默认）
+    supabaseClient.ts  # P1：supabase 客户端单例（仅 storage 与 hooks 可触达）
+    supabase.ts        # P1：SupabaseAdapter（行映射纯函数 + 五方法 + replace_all RPC）
+    index.ts           # 按 env 选择并导出当前 adapter 实例
   hooks/
-    useMeals.ts  useTasks.ts
+    useMeals.ts  useTasks.ts  useAppData.ts  useAuth.ts
   components/
-    common/  today/  meals/  tasks/
+    common/  today/  meals/  tasks/  auth/   # auth/ = P1 登录门（AuthGate + LoginScreen）
   pages/
     Today.tsx  Meals.tsx  Tasks.tsx  Archive.tsx  Settings.tsx
   App.tsx  main.tsx
 docs/
   DECISIONS.md         # 追加式决策日志
+  DEPLOY.md            # P1：Supabase / Vercel 部署与迁移手册
 scripts/
   i18n-check.mjs
+supabase/
+  migrations/          # P1：0001_init.sql（两表 + RLS + replace_all RPC）
 .github/workflows/ci.yml
 ```
 
@@ -158,7 +163,8 @@ export interface StorageAdapter {
 ```
 
 - `local.ts`：单 key `dtm.data.v1` 整包 JSON，写入 300ms 防抖；load 校验 schemaVersion。
-- `supabase.ts`：P1 实现；现在所有方法 `throw new Error('P1')` 并留 TODO。
+- `supabase.ts`（P1）：meals / tasks 两表（snake_case；checklist 用 JSONB、tags 用 text[]、日期 date 型、时间戳 timestamptz），camelCase↔snake_case 行映射为纯函数；upsert 按 id；`replaceAll` 走 `replace_all` RPC 保证导入原子性；RLS 按 auth.uid() 行级隔离；网络写入按操作直发、不做防抖；load 失败向上抛（UI 停留加载态、刷新重试），绝不静默返回空数据。
+- adapter 选择（`index.ts`）：`VITE_SUPABASE_URL` 与 `VITE_SUPABASE_ANON_KEY` 同时存在 → SupabaseAdapter，否则 LocalStorageAdapter。**无 env 的全新 clone 行为与 P0 完全一致**（§12 第 1 条永久成立），CI 保持零 secret。
 - adapter 内不做任何业务逻辑、校验、排序——只做持久化。
 
 ## 7. 领域规则（`lib/` 纯函数，必须有单测）
@@ -225,6 +231,13 @@ export interface StorageAdapter {
 - 「载入示例数据」（仅当前为空时可用）。
 - 危险区：清空全部数据（两步确认）。
 
+### 8.6 登录门（P1，仅云端模式）
+
+- `AuthGate` 挂在 `main.tsx`（bootstrap 层）包住 `<App/>`：无 env 直接透传；有 env 且未登录时渲染登录屏（邮箱 + 密码），登录后进入应用。
+- Supabase 侧关闭公开注册，仅手动创建的单账号可登录；会话由 supabase-js 自动持久化与刷新。
+- 设置页「账号」区提供退出登录（P1 新增功能，独立提交，不计入零改动试金石）。
+- 文案走 i18n（`auth.*` 键）；UI 经 `hooks/useAuth.ts` 触达认证，不 import storage。
+
 ## 9. i18n（自实现）
 
 - `zh.ts` 为全量字典；`en.ts` 必须与 zh 完全同 key（用 `satisfies` 约束）。默认中文。
@@ -273,7 +286,10 @@ export async function parseMealUtterance(text: string, refDate: ISODate): Promis
 ## 13. 路线图
 
 - **P0（本 MVP）**：上述全部。
-- **P1**：Supabase adapter（meals / tasks 两表；checklist 用 JSONB、tags 用 text[]）+ 单账号邮箱登录 + Vercel 部署。迁移 = 本地导出 JSON → 登录后导入。**验收：hooks 及以上 UI 代码零改动**——这是 §2 铁律的试金石。
+- **P1**：Supabase adapter（§6）+ 单账号邮箱登录（§8.6）+ Vercel 部署（vercel.json SPA 重写 + 两个 env）。迁移 = 本地导出 JSON → 登录后导入。验收：
+  - **零改动试金石**：`git diff --diff-filter=M <P0 tip>..HEAD -- src/hooks src/pages src/components src/lib src/App.tsx` 为空（§2 铁律的证明；退出登录入口作为新增功能独立提交、不计入；main.tsx 属 bootstrap，i18n 字典与 storage 层属预期改动面）。
+  - 无 env 本地 `pnpm dev` / `pnpm check` 行为与 P0 完全一致，CI 零 secret。
+  - 迁移演练通过：本地导出 JSON → 线上登录 → 导入 → 刷新与换浏览器登录数据仍在。
 - **P2**：语音 + LLM 解析落槽；PWA（可安装、离线可读）。
 - 每个阶段收尾 `pnpm check` 必须绿。
 
