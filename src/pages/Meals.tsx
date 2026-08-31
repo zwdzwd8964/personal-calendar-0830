@@ -6,6 +6,7 @@ import { addDaysISO, daysUntil, todayISO, weekOf } from '@/lib/dates'
 import { mealFor, useMeals } from '@/hooks/useMeals'
 import WeekGrid from '@/components/meals/WeekGrid'
 import MealSlotModal from '@/components/meals/MealSlotModal'
+import VoiceCapture from '@/components/meals/VoiceCapture'
 import type { MealSlotFormValue } from '@/components/meals/MealSlotModal'
 
 type SlotKind = MealSlot['slot']
@@ -107,6 +108,10 @@ export default function Meals() {
         >
           {t('meals.nextWeek')} ›
         </button>
+      </div>
+
+      <div className="flex justify-end">
+        <VoiceCapture />
       </div>
 
       <WeekGrid
