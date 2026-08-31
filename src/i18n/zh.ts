@@ -109,6 +109,15 @@ export const zh = {
   'archive.restore': '恢复为待办',
   'archive.empty': '暂无归档任务',
 
+  // 登录（P1 云端模式）
+  'auth.email': '邮箱',
+  'auth.password': '密码',
+  'auth.signIn': '登录',
+  'auth.signingIn': '登录中…',
+  'auth.failed': '邮箱或密码不正确',
+  'settings.account': '账号',
+  'settings.signOut': '退出登录',
+
   // 错误兜底
   'error.title': '出错了，页面无法渲染',
   'error.reload': '重新加载',

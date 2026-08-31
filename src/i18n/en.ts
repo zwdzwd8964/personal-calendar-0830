@@ -111,6 +111,15 @@ export const en = {
   'archive.restore': 'Restore to to-do',
   'archive.empty': 'Nothing archived yet',
 
+  // Sign-in (P1 cloud mode)
+  'auth.email': 'Email',
+  'auth.password': 'Password',
+  'auth.signIn': 'Sign in',
+  'auth.signingIn': 'Signing in…',
+  'auth.failed': 'Incorrect email or password',
+  'settings.account': 'Account',
+  'settings.signOut': 'Sign out',
+
   // Error fallback
   'error.title': 'Something went wrong',
   'error.reload': 'Reload',
