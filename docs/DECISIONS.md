@@ -37,3 +37,7 @@
 - 2026-08-31 · 云端 (user_id,date,slot) 加唯一索引 · useMeals 挤占冲突时先删后存，写入顺序与索引兼容，数据库层兜底一槽一条。
 - 2026-08-31 · 退出登录入口放设置页「账号」区，作为独立提交的 P1 新增功能 · 不污染零改动试金石的度量。
 - 2026-08-31 · 单元测试在 vite.config.ts 强制清空 `VITE_SUPABASE_*`（永远本地模式）；云端集成测试独立经 process.env（`SB_TEST_*`）传参并自建客户端，无凭据整组跳过 · 开发者本机的 .env.local 不得影响 pnpm check 的确定性；CI 保持零 secret。
+- 2026-08-31 · P2 前端零新依赖：Service Worker 手写、PWA 图标构建期用 Chromium 渲染、语音用浏览器 Web Speech API、LLM 调用放 Edge Function · §3 依赖锁不破。
+- 2026-08-31 · SW 策略：导航 network-first（离线回退缓存 shell）、同源静态资源 cache-first（哈希文件名不可变）、跨域请求（supabase）不经缓存；仅生产构建注册 · 在线永远拿最新，离线可读。
+- 2026-08-31 · 云端离线=只读快照：成功 load 镜像到 `dtm.cloud.snapshot.v1`，网络失败回退快照，离线横幅挂 bootstrap 层提示「修改不会被保存」 · 需求方确认的语义；本地模式天然全功能离线不受影响。
+- 2026-08-31 · 语音解析用 OpenAI（需求方指定），API key 只存 Supabase Edge Function secret——前端、仓库、CI 永不接触 · 安全边界；本地模式隐藏语音入口。

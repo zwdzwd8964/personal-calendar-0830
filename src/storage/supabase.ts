@@ -50,6 +50,38 @@ function toIso(value: string): string {
   return new Date(value).toISOString()
 }
 
+// 离线快照（§6 P2）：成功 load 后镜像整包数据；网络失败时回退快照（只读语义，
+// 横幅在 bootstrap 层提示「修改不会被保存」），无快照才向上抛
+export const CLOUD_SNAPSHOT_KEY = 'dtm.cloud.snapshot.v1'
+
+function readSnapshot(): AppData | null {
+  try {
+    const raw = localStorage.getItem(CLOUD_SNAPSHOT_KEY)
+    if (raw === null) return null
+    const parsed = JSON.parse(raw) as AppData
+    if (
+      parsed === null ||
+      typeof parsed !== 'object' ||
+      parsed.schemaVersion !== SCHEMA_VERSION ||
+      !Array.isArray(parsed.meals) ||
+      !Array.isArray(parsed.tasks)
+    ) {
+      return null
+    }
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function writeSnapshot(data: AppData): void {
+  try {
+    localStorage.setItem(CLOUD_SNAPSHOT_KEY, JSON.stringify(data))
+  } catch {
+    // 配额不足等：快照是尽力而为的缓存，失败不影响主流程
+  }
+}
+
 // ─────────────── 行映射（纯函数，supabase.test.ts 覆盖） ───────────────
 
 export function mealToRow(meal: MealSlot): MealRow {
@@ -135,16 +167,24 @@ export class SupabaseAdapter implements StorageAdapter {
   }
 
   async load(): Promise<AppData> {
-    const [meals, tasks] = await Promise.all([
-      this.client.from('meals').select('*'),
-      this.client.from('tasks').select('*'),
-    ])
-    if (meals.error) throw meals.error
-    if (tasks.error) throw tasks.error
-    return {
-      schemaVersion: SCHEMA_VERSION,
-      meals: ((meals.data ?? []) as MealRow[]).map(mealFromRow),
-      tasks: ((tasks.data ?? []) as TaskRow[]).map(taskFromRow),
+    try {
+      const [meals, tasks] = await Promise.all([
+        this.client.from('meals').select('*'),
+        this.client.from('tasks').select('*'),
+      ])
+      if (meals.error) throw meals.error
+      if (tasks.error) throw tasks.error
+      const data: AppData = {
+        schemaVersion: SCHEMA_VERSION,
+        meals: ((meals.data ?? []) as MealRow[]).map(mealFromRow),
+        tasks: ((tasks.data ?? []) as TaskRow[]).map(taskFromRow),
+      }
+      writeSnapshot(data)
+      return data
+    } catch (err) {
+      const snapshot = readSnapshot()
+      if (snapshot !== null) return snapshot
+      throw err
     }
   }
 

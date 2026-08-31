@@ -1,8 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { SCHEMA_VERSION } from '@/types'
 import type { MealSlot, Task } from '@/types'
-import { SupabaseAdapter, mealFromRow, mealToRow, taskFromRow, taskToRow } from './supabase'
+import {
+  CLOUD_SNAPSHOT_KEY,
+  SupabaseAdapter,
+  mealFromRow,
+  mealToRow,
+  taskFromRow,
+  taskToRow,
+} from './supabase'
 import type { MealRow, TaskRow } from './supabase'
+
+// snapshot fallback reads localStorage — keep every test isolated
+beforeEach(() => {
+  localStorage.clear()
+})
 
 const fullMeal: MealSlot = {
   id: 'aaaaaaaa-0000-0000-0000-000000000001',
@@ -192,5 +204,37 @@ describe('SupabaseAdapter contract', () => {
     await expect(
       adapter.replaceAll({ schemaVersion: 1, meals: [], tasks: [] }),
     ).rejects.toBeTruthy()
+  })
+})
+
+describe('offline snapshot (§6 P2)', () => {
+  it('successful load mirrors the data into the snapshot key', async () => {
+    const { client } = makeMockClient({ meals: [mealToRow(fullMeal)], tasks: [] })
+    const data = await new SupabaseAdapter(() => client).load()
+    const stored = JSON.parse(localStorage.getItem(CLOUD_SNAPSHOT_KEY) as string)
+    expect(stored).toEqual(data)
+  })
+
+  it('failed load falls back to a valid snapshot (read-only offline semantics)', async () => {
+    localStorage.setItem(
+      CLOUD_SNAPSHOT_KEY,
+      JSON.stringify({ schemaVersion: SCHEMA_VERSION, meals: [fullMeal], tasks: [minimalTask] }),
+    )
+    const { client } = makeMockClient({}, true)
+    const data = await new SupabaseAdapter(() => client).load()
+    expect(data.meals).toEqual([fullMeal])
+    expect(data.tasks).toEqual([minimalTask])
+  })
+
+  it('failed load rethrows when the snapshot is missing or corrupt', async () => {
+    const { client } = makeMockClient({}, true)
+    await expect(new SupabaseAdapter(() => client).load()).rejects.toBeTruthy()
+    localStorage.setItem(CLOUD_SNAPSHOT_KEY, 'garbage')
+    await expect(new SupabaseAdapter(() => client).load()).rejects.toBeTruthy()
+    localStorage.setItem(
+      CLOUD_SNAPSHOT_KEY,
+      JSON.stringify({ schemaVersion: 99, meals: [], tasks: [] }),
+    )
+    await expect(new SupabaseAdapter(() => client).load()).rejects.toBeTruthy()
   })
 })

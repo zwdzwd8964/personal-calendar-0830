@@ -87,8 +87,12 @@ docs/
   DEPLOY.md            # P1：Supabase / Vercel 部署与迁移手册
 scripts/
   i18n-check.mjs
+public/
+  manifest.webmanifest sw.js icons/   # P2：PWA（SW 手写，零依赖）
 supabase/
   migrations/          # P1：0001_init.sql（两表 + RLS + replace_all RPC）
+  functions/
+    parse-meal/        # P2：OpenAI 解析 Edge Function（key 为服务端 secret）
 .github/workflows/ci.yml
 ```
 
@@ -165,6 +169,7 @@ export interface StorageAdapter {
 - `local.ts`：单 key `dtm.data.v1` 整包 JSON，写入 300ms 防抖；load 校验 schemaVersion。
 - `supabase.ts`（P1）：meals / tasks 两表（snake_case；checklist 用 JSONB、tags 用 text[]、日期 date 型、时间戳 timestamptz），camelCase↔snake_case 行映射为纯函数；upsert 按 id；`replaceAll` 走 `replace_all` RPC 保证导入原子性；RLS 按 auth.uid() 行级隔离；网络写入按操作直发、不做防抖；load 失败向上抛（UI 停留加载态、刷新重试），绝不静默返回空数据。
 - adapter 选择（`index.ts`）：`VITE_SUPABASE_URL` 与 `VITE_SUPABASE_ANON_KEY` 同时存在 → SupabaseAdapter，否则 LocalStorageAdapter。**无 env 的全新 clone 行为与 P0 完全一致**（§12 第 1 条永久成立），CI 保持零 secret。
+- 离线快照（P2）：SupabaseAdapter 每次成功 load 后把整包 AppData 镜像到 localStorage key `dtm.cloud.snapshot.v1`；load 网络失败时若有快照则返回快照（只读语义——写操作照常失败，bootstrap 层挂离线横幅告知「修改不会被保存」），无快照才向上抛。本地模式不受影响（天然全功能离线）。
 - adapter 内不做任何业务逻辑、校验、排序——只做持久化。
 
 ## 7. 领域规则（`lib/` 纯函数，必须有单测）
@@ -245,16 +250,20 @@ export interface StorageAdapter {
 - `pnpm i18n:check`：脚本扫描 `src/components` 与 `src/pages` 中的 CJK 字符（豁免 `i18n/` 与 `*.test.*`），发现即退出码 1。纳入 `pnpm check`。
 - 日期本地化：中文「8月30日 周六」，英文「Sat, Aug 30」。
 
-## 10. 语音录入（P2——现在只留接口，禁止实现）
+## 10. 语音录入（P2）
 
 ```ts
-// src/voice/parseMeal.ts（P2 实现）
+// src/voice/parseMeal.ts
 export type MealDraft = Pick<MealSlot, 'date' | 'slot' | 'person'> &
   Partial<Pick<MealSlot, 'place' | 'note'>>
 export async function parseMealUtterance(text: string, refDate: ISODate): Promise<MealDraft[]>
 ```
 
-语音产出的草稿必须走与手动录入**完全相同**的 `useMeals().upsert()` 路径。现在仅创建带 TODO 的文件与类型。
+- **录音转文字**：浏览器 Web Speech API（SpeechRecognition，随 locale 设 zh-CN/en-US）；不支持的浏览器隐藏麦克风，仅保留文字输入。弹层内始终提供文字输入框作为兜底——语音只是输入法。
+- **解析**：Supabase Edge Function `parse-meal`（代码在 `supabase/functions/parse-meal/`）持有 `OPENAI_API_KEY` 服务端 secret，仅登录用户可调；入参 `{ text, refDate, locale }`，出参 `{ drafts: MealDraft[] }`。前端 `parseMealUtterance` 经 functions.invoke 调用并做形状校验（日期合法、slot 枚举、person 非空），坏草稿整体拒绝。模型名经 `OPENAI_MODEL` secret 配置。
+- **落槽**：草稿卡片列出解析结果（可多条），逐条或全部确认；确认走与手动录入**完全相同**的 `useMeals().upsert()` 路径。解析失败/超时给出可读错误并引导手动录入。
+- **降级**：本地模式（无 supabase env）隐藏语音入口；离线时入口禁用。
+- voice 层（`src/voice/*`）与 hooks 同等待遇，可触达 `storage/supabaseClient`；UI 仍只 import voice/hooks。
 
 ## 11. 自动化
 
@@ -290,7 +299,12 @@ export async function parseMealUtterance(text: string, refDate: ISODate): Promis
   - **零改动试金石**：`git diff --diff-filter=M <P0 tip>..HEAD -- src/hooks src/pages src/components src/lib src/App.tsx` 为空（§2 铁律的证明；退出登录入口作为新增功能独立提交、不计入；main.tsx 属 bootstrap，i18n 字典与 storage 层属预期改动面）。
   - 无 env 本地 `pnpm dev` / `pnpm check` 行为与 P0 完全一致，CI 零 secret。
   - 迁移演练通过：本地导出 JSON → 线上登录 → 导入 → 刷新与换浏览器登录数据仍在。
-- **P2**：语音 + LLM 解析落槽；PWA（可安装、离线可读）。
+- **P2**：PWA（可安装、离线可读）+ 语音落槽（§10，OpenAI 经 Edge Function）。验收：
+  - [x] PWA：manifest + 图标 + 手写 Service Worker（零新 npm 依赖）；生产构建下断网刷新应用外壳可加载
+  - [x] 本地模式离线全功能；云端模式离线显示最近快照 + 离线横幅，恢复在线后刷新回真实数据
+  - [ ] 语音/文字一句话 → 草稿卡片 → 确认落槽（与手动 upsert 同路径）；本地模式隐藏入口；解析失败有兜底
+  - [ ] 常见句式解析正确（今天/明天/周 X/下周 X × 午/晚 × 人名地点）
+  - [ ] `pnpm check` 与 CI 绿；CI 仍零 secret（edge function 的 key 只存 Supabase）
 - 每个阶段收尾 `pnpm check` 必须绿。
 
 ## 14. 起手式（首次会话按序执行）
