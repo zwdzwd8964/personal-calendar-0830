@@ -19,6 +19,7 @@ export const zh = {
   'common.add': '添加',
   'common.restore': '恢复',
   'common.close': '关闭',
+  'common.saveFailed': '保存失败：请检查网络与登录状态，退出重新登录后再试',
 
   // 今日页
   'today.lunch': '午餐',

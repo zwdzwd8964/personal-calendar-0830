@@ -75,8 +75,9 @@ export const useTasks = create<TasksState>()((set, get) => ({
       createdAt: now,
       updatedAt: now,
     }
-    set({ tasks: [...get().tasks, task] })
+    // 先持久化后入内存：云端写失败立刻暴露给调用方，不产生刷新即消失的幽灵数据
     await storage.saveTask(task)
+    set({ tasks: [...get().tasks, task] })
     return task
   },
 

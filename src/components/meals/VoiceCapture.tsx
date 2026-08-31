@@ -51,6 +51,7 @@ export default function VoiceCapture() {
   const [failed, setFailed] = useState(false)
   const [drafts, setDrafts] = useState<MealDraft[] | null>(null)
   const [saved, setSaved] = useState<Set<number>>(new Set())
+  const [saveError, setSaveError] = useState(false)
   const recRef = useRef<SpeechRecognitionLike | null>(null)
   const supported = speechCtor() !== null
 
@@ -116,8 +117,14 @@ export default function VoiceCapture() {
   const saveDraft = async (index: number) => {
     if (drafts === null || saved.has(index)) return
     const d = drafts[index]
-    await upsert({ date: d.date, slot: d.slot, person: d.person, place: d.place, note: d.note })
-    setSaved((prev) => new Set(prev).add(index))
+    try {
+      await upsert({ date: d.date, slot: d.slot, person: d.person, place: d.place, note: d.note })
+      setSaveError(false)
+      setSaved((prev) => new Set(prev).add(index))
+    } catch (err) {
+      console.error('meal draft save failed', err)
+      setSaveError(true)
+    }
   }
 
   const saveAll = async () => {
@@ -173,6 +180,7 @@ export default function VoiceCapture() {
           {listening && <p className="text-xs text-amber-600">{t('voice.listening')}</p>}
           {!supported && <p className="text-xs text-gray-400">{t('voice.unsupported')}</p>}
           {failed && <p className="text-sm text-red-600">{t('voice.parseFailed')}</p>}
+          {saveError && <p className="text-sm text-red-600">{t('common.saveFailed')}</p>}
 
           {drafts !== null && (
             <div className="space-y-2 pt-1">

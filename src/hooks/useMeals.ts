@@ -67,13 +67,14 @@ export const useMeals = create<MealsState>()((set, get) => ({
       const displaced = meals.find(
         (m) => m.id !== updated.id && m.date === updated.date && m.slot === updated.slot,
       )
-      set({
-        meals: meals
-          .filter((m) => !(displaced && m.id === displaced.id))
-          .map((m) => (m.id === updated.id ? updated : m)),
-      })
+      // 先持久化后入内存（先删被挤占者以兼容 (user_id,date,slot) 唯一索引）
       if (displaced) await storage.deleteMeal(displaced.id)
       await storage.saveMeal(updated)
+      set({
+        meals: get()
+          .meals.filter((m) => !(displaced && m.id === displaced.id))
+          .map((m) => (m.id === updated.id ? updated : m)),
+      })
       return
     }
 
@@ -87,8 +88,8 @@ export const useMeals = create<MealsState>()((set, get) => ({
         note: input.note,
         updatedAt: now,
       }
-      set({ meals: meals.map((m) => (m.id === occupant.id ? updated : m)) })
       await storage.saveMeal(updated)
+      set({ meals: get().meals.map((m) => (m.id === occupant.id ? updated : m)) })
       return
     }
 
@@ -102,8 +103,8 @@ export const useMeals = create<MealsState>()((set, get) => ({
       createdAt: now,
       updatedAt: now,
     }
-    set({ meals: [...meals, created] })
     await storage.saveMeal(created)
+    set({ meals: [...get().meals, created] })
   },
 
   async remove(id) {

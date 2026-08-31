@@ -21,6 +21,7 @@ export const en = {
   'common.add': 'Add',
   'common.restore': 'Restore',
   'common.close': 'Close',
+  'common.saveFailed': 'Save failed — check your network and sign-in, then sign out/in and retry',
 
   // Today page
   'today.lunch': 'Lunch',
