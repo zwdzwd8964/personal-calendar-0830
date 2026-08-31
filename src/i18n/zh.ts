@@ -118,6 +118,22 @@ export const zh = {
   'settings.account': '账号',
   'settings.signOut': '退出登录',
 
+  // 语音落槽（P2 云端模式）
+  'voice.button': '语音录入',
+  'voice.title': '一句话安排饭局',
+  'voice.placeholder': '说一句或输入一句，如：明天中午跟老张在食堂吃饭',
+  'voice.start': '开始说话',
+  'voice.stop': '停止',
+  'voice.listening': '聆听中…',
+  'voice.parse': '解析',
+  'voice.parsing': '解析中…',
+  'voice.parseFailed': '没听懂这句话，换个说法试试，或直接点空槽手动添加',
+  'voice.unsupported': '此浏览器不支持语音识别，可直接输入文字',
+  'voice.save': '存入',
+  'voice.saveAll': '全部存入',
+  'voice.saved': '已存入',
+  'voice.overwriteHint': '该槽已有安排（{person}），存入将覆盖',
+
   // 离线（P2 云端模式）
   'offline.banner': '当前离线：显示最近一次同步的快照，此时的修改不会被保存',
 

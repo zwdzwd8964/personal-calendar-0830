@@ -302,9 +302,9 @@ export async function parseMealUtterance(text: string, refDate: ISODate): Promis
 - **P2**：PWA（可安装、离线可读）+ 语音落槽（§10，OpenAI 经 Edge Function）。验收：
   - [x] PWA：manifest + 图标 + 手写 Service Worker（零新 npm 依赖）；生产构建下断网刷新应用外壳可加载
   - [x] 本地模式离线全功能；云端模式离线显示最近快照 + 离线横幅，恢复在线后刷新回真实数据
-  - [ ] 语音/文字一句话 → 草稿卡片 → 确认落槽（与手动 upsert 同路径）；本地模式隐藏入口；解析失败有兜底
-  - [ ] 常见句式解析正确（今天/明天/周 X/下周 X × 午/晚 × 人名地点）
-  - [ ] `pnpm check` 与 CI 绿；CI 仍零 secret（edge function 的 key 只存 Supabase）
+  - [x] 语音/文字一句话 → 草稿卡片 → 确认落槽（与手动 upsert 同路径）；本地模式隐藏入口；解析失败有兜底
+  - [x] 常见句式解析正确（今天/明天/周 X/下周 X × 午/晚 × 人名地点）
+  - [x] `pnpm check` 与 CI 绿；CI 仍零 secret（edge function 的 key 只存 Supabase）
 - 每个阶段收尾 `pnpm check` 必须绿。
 
 ## 14. 起手式（首次会话按序执行）

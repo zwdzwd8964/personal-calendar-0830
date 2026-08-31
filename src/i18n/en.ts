@@ -120,6 +120,22 @@ export const en = {
   'settings.account': 'Account',
   'settings.signOut': 'Sign out',
 
+  // Voice input (P2 cloud mode)
+  'voice.button': 'Voice input',
+  'voice.title': 'One sentence, one plan',
+  'voice.placeholder': 'Speak or type, e.g. lunch with Zhang at the canteen tomorrow',
+  'voice.start': 'Start speaking',
+  'voice.stop': 'Stop',
+  'voice.listening': 'Listening…',
+  'voice.parse': 'Parse',
+  'voice.parsing': 'Parsing…',
+  'voice.parseFailed': "Couldn't parse that — rephrase it, or tap an empty slot to add manually",
+  'voice.unsupported': 'Speech recognition is not supported in this browser — type instead',
+  'voice.save': 'Save',
+  'voice.saveAll': 'Save all',
+  'voice.saved': 'Saved',
+  'voice.overwriteHint': 'Slot already has a plan ({person}) — saving will overwrite',
+
   // Offline (P2 cloud mode)
   'offline.banner': 'Offline: showing the last synced snapshot — changes will not be saved',
 
