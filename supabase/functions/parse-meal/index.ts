@@ -36,6 +36,30 @@ function json(body: unknown, status: number): Response {
   })
 }
 
+// LLM 的日历心算不可靠（实测 gpt-4o-mini 会把「周三」「大后天」算错）——
+// 用代码把 refDate 起到下周日的每一天算成对照表让模型查表，而不是让它推算。
+const WEEKDAYS_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+const WEEKDAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+function buildDateTable(refDate: string): string {
+  const [y, m, d] = refDate.split('-').map(Number)
+  const base = Date.UTC(y, m - 1, d)
+  const refDow = new Date(base).getUTCDay()
+  const daysToThisSunday = refDow === 0 ? 0 : 7 - refDow
+  const relative = ['今天', '明天', '后天', '大后天']
+  const lines: string[] = []
+  for (let i = 0; i <= daysToThisSunday + 7; i += 1) {
+    const dt = new Date(base + i * 86400000)
+    const iso = dt.toISOString().slice(0, 10)
+    const dow = dt.getUTCDay()
+    const weekTag = `${i <= daysToThisSunday ? '本周' : '下周'}${WEEKDAYS_ZH[dow].slice(1)}`
+    const labels = [weekTag, `${WEEKDAYS_ZH[dow]} ${WEEKDAYS_EN[dow]}`]
+    if (i < relative.length) labels.unshift(relative[i])
+    lines.push(`${iso} = ${labels.join('，')}`)
+  }
+  return lines.join('\n')
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
@@ -50,13 +74,18 @@ Deno.serve(async (req) => {
     }
     const apiKey = Deno.env.get('OPENAI_API_KEY')
     if (!apiKey) return json({ error: 'OPENAI_API_KEY secret not configured' }, 500)
-    const model = Deno.env.get('OPENAI_MODEL') ?? 'gpt-4o-mini'
+    // 4o-mini 对「下周X」严格语义等日历边角不稳（实测 11/13），4.1-mini 13/13
+    const model = Deno.env.get('OPENAI_MODEL') ?? 'gpt-4.1-mini'
 
     const system = `你把一句关于饭局安排的自然语言（中文或英文）解析成结构化草稿。
-今天是 ${refDate}。规则：
-- 相对日期（今天/明天/后天/大后天/周X/下周X/tomorrow/next Tuesday 等）一律换算成具体 YYYY-MM-DD；「周X」指本周该天，若该天已过则指下周该天。
+今天是 ${refDate}。下面是日期对照表，日期一律【查表】确定，禁止自行心算：
+${buildDateTable(refDate)}
+规则：
+- 「今天/明天/后天/大后天/tomorrow」等直接查表。单说「周X / Friday」：本周该天还没过去（含今天）就用「本周X」那行；已过去才用「下周X」那行。
+- 明说「下周X / next X」的必须严格取「下周X」那行。例：今天是周一时「下周日」= 表中下周日（不是最近的这个周日）。
+- 具体日期（如 9月3日）按今年就近换算，仍须与表核对星期不冲突。
 - 时段：提到中午/午饭/午餐/lunch/noon → lunch；提到晚上/晚饭/晚餐/dinner/tonight → dinner；未提及默认 dinner。
-- person 填跟谁吃（多人原样保留，如「李姐、王强」）；place 填地点；其余细节放 note；没有就用 null。
+- person 必须是有意义的非空文字：有人名用人名（多人原样保留，如「李姐、王强」），没有人名就用对象或活动主体（如「同学」「家人」「供应商」），严禁输出 "null"、"无" 之类的占位。place 填地点、note 填其余细节，没有才用 null——null 只允许出现在 place 和 note。
 - 一句话可能包含多个安排，逐条输出；与吃饭安排无关的输入输出空数组。`
 
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -64,6 +93,7 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model,
+        temperature: 0,
         messages: [
           { role: 'system', content: system },
           { role: 'user', content: text },

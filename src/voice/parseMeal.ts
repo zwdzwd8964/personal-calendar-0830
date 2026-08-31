@@ -30,7 +30,11 @@ export function sanitizeDrafts(payload: unknown): MealDraft[] {
     const { date, slot, person, place, note } = item
     if (typeof date !== 'string' || !isValidDateString(date)) throw new Error('invalid draft date')
     if (slot !== 'lunch' && slot !== 'dinner') throw new Error('invalid draft slot')
-    if (typeof person !== 'string' || person.trim() === '') {
+    if (
+      typeof person !== 'string' ||
+      person.trim() === '' ||
+      ['null', 'none', '无'].includes(person.trim().toLowerCase())
+    ) {
       throw new Error('invalid draft person')
     }
     return {
