@@ -36,3 +36,4 @@
 - 2026-08-31 · timestamptz 读回一律 normalize 成 `toISOString()` 的 'Z' 形态 · groupFuzzy 以 createdAt 字符串比较做平序，格式必须稳定。
 - 2026-08-31 · 云端 (user_id,date,slot) 加唯一索引 · useMeals 挤占冲突时先删后存，写入顺序与索引兼容，数据库层兜底一槽一条。
 - 2026-08-31 · 退出登录入口放设置页「账号」区，作为独立提交的 P1 新增功能 · 不污染零改动试金石的度量。
+- 2026-08-31 · 单元测试在 vite.config.ts 强制清空 VITE_SUPABASE__（永远本地模式）；云端集成测试独立经 process.env（SB_TEST__）传参并自建客户端，无凭据整组跳过 · 开发者本机的 .env.local 不得影响 pnpm check 的确定性；CI 保持零 secret。
