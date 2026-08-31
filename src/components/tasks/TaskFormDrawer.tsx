@@ -71,6 +71,7 @@ export default function TaskFormDrawer({
   const [checkInput, setCheckInput] = useState('')
   const [note, setNote] = useState(task?.note ?? '')
   const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const errorRef = useRef<HTMLParagraphElement>(null)
 
@@ -123,6 +124,7 @@ export default function TaskFormDrawer({
   const removeCheckItem = (id: string) => setChecklist((prev) => prev.filter((c) => c.id !== id))
 
   const onSave = async () => {
+    if (saving) return
     const trimmedTitle = title.trim()
     if (trimmedTitle === '') {
       setError(t('tasks.titleRequired'))
@@ -171,6 +173,7 @@ export default function TaskFormDrawer({
       note: note.trim() === '' ? undefined : note.trim(),
     }
 
+    setSaving(true)
     try {
       if (task) {
         await update(task.id, payload)
@@ -179,9 +182,13 @@ export default function TaskFormDrawer({
         onCreated?.(created)
       }
       onClose()
-    } catch {
-      // hooks reject firm mode without a deadline
-      setError(t('tasks.deadlineRequired'))
+    } catch (err) {
+      // deadline is pre-validated above, so a rejection here is a persistence failure
+      // (network / auth / backend) — show the real class of error, keep details in console
+      console.error('task save failed', err)
+      setError(t('common.saveFailed'))
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -473,7 +480,8 @@ export default function TaskFormDrawer({
             </button>
             <button
               onClick={() => void onSave()}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              disabled={saving}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {t('common.save')}
             </button>

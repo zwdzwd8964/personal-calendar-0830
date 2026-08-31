@@ -66,7 +66,10 @@ export default function Meals() {
 
   const handleSave = (value: MealSlotFormValue) => {
     if (editing === null) return
-    void upsert({ id: editingMeal?.id, date: editing.date, slot: editing.slot, ...value })
+    // persist-first hooks: a failed cloud write never enters memory (no ghost rows)
+    void upsert({ id: editingMeal?.id, date: editing.date, slot: editing.slot, ...value }).catch(
+      (err) => console.error('meal save failed', err),
+    )
     setEditing(null)
   }
 
